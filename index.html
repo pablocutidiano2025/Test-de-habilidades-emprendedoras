@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test de Mentalidad Emprendedora</title>
+    <!-- Incluyendo Tailwind CSS para un estilo moderno y responsivo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Estilo base para el cuerpo de la aplicación */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0fdf4; /* Nuevo color: Verde muy claro */
+        }
+        /* Estilos específicos para los botones de radio (opciones) */
+        .rating-option {
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 9999px; /* Fully rounded */
+        }
+        .rating-option:hover {
+            background-color: #e2e8f0;
+        }
+        /* Estilo para la opción seleccionada */
+        input[type="radio"]:checked + .rating-option {
+            background-color: #3b82f6; /* Blue-600 */
+            color: white;
+            font-weight: 600;
+            transform: scale(1.05);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+        /* Color de las interpretaciones */
+        .fortaleza { background-color: #d1fae5; color: #065f46; border-color: #34d399; } /* Verde - Super Fortaleza */
+        .potencial { background-color: #fef3c7; color: #92400e; border-color: #fcd34d; } /* Amarillo - Potencial */
+        .debilidad { background-color: #fee2e2; color: #991b1b; border-color: #fca5a5; } /* Rojo - Punto Débil */
+
+        /* Nuevo estilo para resaltar preguntas no respondidas */
+        .question-error {
+            border: 3px solid #ef4444 !important; /* Rojo intenso para la advertencia */
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8">
+
+    <div id="app-container" class="max-w-4xl mx-auto bg-white shadow-xl rounded-2xl p-6 sm:p-10">
+
+        <!-- Encabezado del Test -->
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-800 mb-2">Test de Mentalidad Emprendedora Fácil</h1>
+            <p class="text-lg text-gray-600">Evalúa tu perfil en 9 dimensiones clave para el éxito empresarial.</p>
+            <p class="text-sm text-gray-500 mt-4 border-t pt-3">Selecciona el valor que *mejor te representa* en la escala de 1 a 5.</p>
+        </header>
+
+        <!-- Contenedor del Cuestionario -->
+        <form id="quizForm" class="space-y-8">
+            <!-- El cuestionario se renderizará aquí mediante JavaScript -->
+        </form>
+
+        <!-- Botón de Cálculo -->
+        <div class="mt-10 text-center">
+            <button id="calculateButton" onclick="calculateResults()"
+                class="w-full sm:w-auto px-12 py-4 bg-blue-600 text-white text-xl font-bold rounded-xl shadow-lg hover:bg-blue-700 transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50">
+                Calcular mis Resultados
+            </button>
+        </div>
+
+        <!-- Mensaje de Error (Inicialmente oculto) -->
+        <div id="errorMessage" class="hidden mt-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl relative" role="alert">
+            <strong class="font-bold">¡Atención!</strong>
+            <span class="block sm:inline">Por favor, responde todas las preguntas para ver tu perfil y revisa las preguntas marcadas en rojo.</span>
+        </div>
+
+        <!-- Sección de Resultados (Inicialmente oculta) -->
+        <section id="resultsSection" class="hidden mt-12 pt-8 border-t-2 border-gray-200">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">Tu Perfil Emprendedor</h2>
+
+            <!-- Resultados por Dimensión -->
+            <div class="space-y-4 mb-10">
+                <h3 class="text-2xl font-semibold text-gray-700 mb-4 border-b pb-2">1. Resultados Detallados por Dimensión (Máx. 15 puntos)</h3>
+                <div id="dimensionResults" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Las tarjetas de resultados se insertarán aquí -->
+                </div>
+            </div>
+
+            <!-- Resultado Global -->
+            <div class="text-center p-8 rounded-2xl shadow-xl border-4 border-blue-200">
+                <h3 class="text-2xl font-semibold text-gray-700 mb-2">2. Perfil General</h3>
+                <div id="overallScore" class="text-5xl font-extrabold mb-4 text-blue-600"></div>
+                <p id="overallInterpretation" class="text-xl font-medium text-gray-700"></p>
+            </div>
+
+            <!-- Botón de Reinicio -->
+             <div class="mt-8 text-center">
+                <button onclick="resetQuiz()"
+                    class="px-8 py-3 bg-gray-500 text-white text-lg font-semibold rounded-xl hover:bg-gray-600 transition duration-300 focus:outline-none focus:ring-4 focus:ring-gray-500 focus:ring-opacity-50">
+                    Reiniciar Test
+                </button>
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+        // Array de objetos para almacenar las dimensiones y sus preguntas
+        const quizData = [
+            {
+                dimension: "Actitud y Ejecución",
+                questions: [
+                    { id: 1, text: "Cuando tengo una idea, actúo de inmediato en lugar de esperar el momento perfecto." },
+                    { id: 2, text: "Busco activamente solucionar problemas antes de que alguien más me lo pida o se conviertan en crisis." },
+                    { id: 3, text: "Si encuentro un gran obstáculo, lo veo como un reto y no como una razón para rendirme." }
+                ]
+            },
+            {
+                dimension: "Motivación y Propósito",
+                questions: [
+                    { id: 4, text: "Me motiva más alcanzar grandes resultados y metas que solo recibir un sueldo fijo." },
+                    { id: 5, text: "Disfruto mucho tomando mis propias decisiones en el trabajo, sin depender de otros." },
+                    { id: 6, text: "Estoy dispuesto a invertir mucho tiempo y esfuerzo personal para que un proyecto mío tenga éxito." }
+                ]
+            },
+            {
+                dimension: "Creatividad e Ideas",
+                questions: [
+                    { id: 7, text: "Cuando busco soluciones, prefiero pensar en algo totalmente nuevo y diferente." },
+                    { id: 8, text: "Soy bueno encontrando oportunidades en situaciones que otros ven solo como problemas." },
+                    { id: 9, text: "Me adapto muy rápido a los cambios de tecnología, mercado o planes inesperados." }
+                ]
+            },
+            {
+                dimension: "Organización y Estructura",
+                questions: [
+                    { id: 10, text: "Uso sistemas claros (listas, apps, archivos) para tener todo mi trabajo bajo control y ordenado." },
+                    { id: 11, text: "Tengo claridad para decidir qué tarea es la más importante o urgente en un momento dado." },
+                    { id: 12, text: "Soy bueno identificando y consiguiendo las herramientas o el personal que necesito para un proyecto." }
+                ]
+            },
+            {
+                dimension: "Planificación y Estrategia",
+                questions: [
+                    { id: 13, text: "Antes de empezar, siempre defino los pasos y las metas concretas que quiero lograr a largo plazo." },
+                    { id: 14, text: "Mis metas no son solo deseos, son objetivos medibles con fechas límite." },
+                    { id: 15, text: "Reviso mis planes constantemente para ver si estoy cumpliendo los plazos o si necesito cambiar de ruta." }
+                ]
+            },
+            {
+                dimension: "Liderazgo",
+                questions: [
+                    { id: 16, text: "Mi entusiasmo y visión suelen motivar a mis compañeros o equipo de trabajo." },
+                    { id: 17, text: "No dudo en tomar una decisión final, incluso cuando la información no es perfecta." },
+                    { id: 18, text: "Confío en los demás y les doy responsabilidades para ayudarles a crecer." }
+                ]
+            },
+            {
+                dimension: "Comunicación y Redes",
+                questions: [
+                    { id: 19, text: "Soy capaz de explicar ideas complicadas de forma simple y fácil de entender." },
+                    { id: 20, text: "Tengo habilidad para convencer a otros de unirse a mis ideas o cerrar un buen trato." },
+                    { id: 21, text: "Se me da bien conocer gente nueva y mantener una red de contactos profesional valiosa." }
+                ]
+            },
+            {
+                dimension: "Tolerancia al Riesgo",
+                questions: [
+                    { id: 22, text: "Me siento tranquilo y me desempeño bien en situaciones donde hay mucha incertidumbre." },
+                    { id: 23, text: "Evalúo los riesgos antes de actuar, pero no me quedo paralizado por el miedo a perder." },
+                    { id: 24, text: "Si un proyecto fracasa, lo tomo como una lección necesaria, no como algo personal." }
+                ]
+            },
+            {
+                dimension: "Aprendizaje y Crecimiento",
+                questions: [
+                    { id: 25, text: "Estoy siempre buscando aprender nuevas habilidades o conocimientos que me ayuden en el futuro." },
+                    { id: 26, text: "Creo que puedo mejorar cualquier habilidad con suficiente esfuerzo y práctica." },
+                    { id: 27, text: "Pido activamente a otros que me critiquen constructivamente para saber dónde mejorar." }
+                ]
+            },
+        ];
+
+        const form = document.getElementById('quizForm');
+        const resultsSection = document.getElementById('resultsSection');
+        const errorMessage = document.getElementById('errorMessage');
+        const dimensionResultsDiv = document.getElementById('dimensionResults');
+        const overallScoreDiv = document.getElementById('overallScore');
+        const overallInterpretationDiv = document.getElementById('overallInterpretation');
+
+        /**
+         * Renderiza el cuestionario completo en el formulario.
+         */
+        function renderQuiz() {
+            let htmlContent = '';
+            let questionCounter = 0;
+
+            quizData.forEach((section, sectionIndex) => {
+                htmlContent += `
+                    <div class="p-6 bg-gray-50 rounded-xl shadow-inner">
+                        <h2 class="text-xl font-bold text-gray-800 mb-4">Dimensión ${sectionIndex + 1}: ${section.dimension}</h2>
+                        <div class="space-y-6">
+                `;
+
+                section.questions.forEach((q) => {
+                    questionCounter++;
+                    htmlContent += `
+                        <div id="q-container-${questionCounter}" class="p-4 border border-gray-200 rounded-lg bg-white transition duration-300">
+                            <p class="font-semibold text-gray-700 mb-3">${questionCounter}. ${q.text}</p>
+                            <div class="flex justify-between items-center text-sm font-medium text-gray-500">
+                                <span>Casi nunca (1)</span>
+                                <span>Casi siempre (5)</span>
+                            </div>
+                            <div class="flex justify-between mt-2">
+                                ${[1, 2, 3, 4, 5].map(score => `
+                                    <input type="radio" id="q${questionCounter}-${score}" name="q${questionCounter}" value="${score}" class="hidden" required>
+                                    <label for="q${questionCounter}-${score}" class="w-10 h-10 flex items-center justify-center rating-option text-gray-700 border border-gray-300">
+                                        ${score}
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                htmlContent += '</div></div>';
+            });
+
+            form.innerHTML = htmlContent;
+        }
+
+        /**
+         * Verifica si todas las preguntas han sido respondidas y marca las faltantes.
+         * @returns {boolean} True si todas están respondidas, False en caso contrario.
+         */
+        function validateForm() {
+            const totalQuestions = 27;
+            let allAnswered = true;
+
+            // 1. Limpiar errores previos en todas las preguntas
+            document.querySelectorAll('.question-error').forEach(el => {
+                el.classList.remove('question-error');
+            });
+
+            // 2. Revisar y marcar preguntas faltantes
+            for (let i = 1; i <= totalQuestions; i++) {
+                const answer = document.querySelector(`input[name="q${i}"]:checked`);
+                // Usamos el ID del contenedor que agregamos en renderQuiz
+                const questionContainer = document.getElementById(`q-container-${i}`);
+
+                if (!answer) {
+                    allAnswered = false;
+                    // Marcar el contenedor de la pregunta con error
+                    if (questionContainer) {
+                        questionContainer.classList.add('question-error');
+                    }
+                }
+            }
+            return allAnswered;
+        }
+
+        /**
+         * Obtiene la interpretación para una puntuación de dimensión.
+         * @param {number} score - Puntuación de la dimensión (3-15).
+         * @returns {{text: string, className: string}} Objeto con la descripción y la clase CSS.
+         */
+        function getDimensionInterpretation(score) {
+            if (score >= 12) {
+                return {
+                    text: "✅ Súper Fortaleza (ADN Emprendedor): Esta es una habilidad muy desarrollada y un pilar clave. ¡Úsala mucho!",
+                    className: "fortaleza"
+                };
+            } else if (score >= 8) {
+                return {
+                    text: "🟡 Potencial a Desarrollar: Tienes una buena base para esta habilidad. Con práctica y enfoque, puedes convertirla en una fortaleza.",
+                    className: "potencial"
+                };
+            } else {
+                return {
+                    text: "🛑 Punto Débil: Necesitas trabajar conscientemente en esta área. Busca un socio que te complemente en esta cualidad.",
+                    className: "debilidad"
+                };
+            }
+        }
+
+        /**
+         * Obtiene la interpretación general basada en la puntuación total.
+         * @param {number} totalScore - Puntuación total (27-135).
+         * @returns {string} Texto de la interpretación general.
+         */
+        function getOverallInterpretation(totalScore) {
+            if (totalScore >= 108) {
+                return "Perfil Altamente Emprendedor. Tu mentalidad y habilidades están fuertemente alineadas para crear y dirigir negocios con éxito. ¡Estás listo/a para arrancar!";
+            } else if (totalScore >= 81) {
+                return "Perfil Emprendedor Activo. Tienes un buen equilibrio de fortalezas y solo necesitas pulir algunas áreas. Enfócate en mejorar las dimensiones que obtuvieron puntuaciones medias.";
+            } else {
+                return "Mentalidad con Gran Potencial. Tienes el interés, pero se sugiere invertir tiempo en el desarrollo activo de varias habilidades blandas clave. ¡Busca mentores o capacitación!";
+            }
+        }
+
+        /**
+         * Maneja el cálculo de resultados y su visualización.
+         */
+        function calculateResults() {
+            if (!validateForm()) {
+                // Si la validación falla, las preguntas faltantes ya están marcadas.
+                errorMessage.classList.remove('hidden');
+                resultsSection.classList.add('hidden');
+                // Scroll al mensaje de error
+                errorMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+
+            // Ocultar error si todo está bien y limpiar cualquier marcado
+            errorMessage.classList.add('hidden');
+            document.querySelectorAll('.question-error').forEach(el => {
+                el.classList.remove('question-error');
+            });
+
+            let totalScore = 0;
+            dimensionResultsDiv.innerHTML = '';
+
+            // 1. Calcular resultados por dimensión
+            let questionIndex = 1;
+            quizData.forEach(section => {
+                let dimensionScore = 0;
+                section.questions.forEach(() => {
+                    const answer = document.querySelector(`input[name="q${questionIndex}"]:checked`);
+                    dimensionScore += parseInt(answer.value, 10);
+                    questionIndex++;
+                });
+
+                totalScore += dimensionScore;
+                const interpretation = getDimensionInterpretation(dimensionScore);
+
+                // Generar tarjeta de resultado de la dimensión
+                dimensionResultsDiv.innerHTML += `
+                    <div class="p-5 rounded-xl shadow-md border-4 border-current ${interpretation.className}">
+                        <h4 class="text-lg font-bold mb-2">${section.dimension}</h4>
+                        <p class="text-4xl font-extrabold mb-3">${dimensionScore}<span class="text-xl font-normal"> / 15</span></p>
+                        <p class="text-sm">${interpretation.text}</p>
+                    </div>
+                `;
+            });
+
+            // 2. Mostrar resultado global
+            overallScoreDiv.textContent = `${totalScore} / 135 Puntos`;
+            overallInterpretationDiv.textContent = getOverallInterpretation(totalScore);
+
+            // 3. Mostrar la sección de resultados y ocultar el formulario
+            form.classList.add('hidden');
+            document.getElementById('calculateButton').classList.add('hidden');
+            resultsSection.classList.remove('hidden');
+
+            // Scroll a la sección de resultados
+            resultsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        /**
+         * Reinicia el cuestionario.
+         */
+        function resetQuiz() {
+            form.reset();
+            form.classList.remove('hidden');
+            document.getElementById('calculateButton').classList.remove('hidden');
+            resultsSection.classList.add('hidden');
+            errorMessage.classList.add('hidden');
+            // Asegurarse de limpiar los errores visuales al reiniciar
+            document.querySelectorAll('.question-error').forEach(el => {
+                el.classList.remove('question-error');
+            });
+            // Scroll al inicio del test
+            document.getElementById('app-container').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Inicializar el quiz al cargar la página
+        window.onload = renderQuiz;
+    </script>
+</body>
+</html>
